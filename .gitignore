@@ -1,0 +1,9 @@
+*.d
+*.o
+*.txt
+*.log
+*.csv
+*.pyc
+*.pyo
+_build/
+
