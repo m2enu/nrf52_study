@@ -18,7 +18,7 @@
 #define LED_ON_(pin)            nrf_gpio_pin_write(pin, LED_LEVEL_ON_)
 #define LED_OFF(pin)            nrf_gpio_pin_write(pin, LED_LEVEL_OFF)
 #define LED_TGL(pin)            nrf_gpio_pin_toggle(pin)
-#define LED_TICKS_MS            500
+#define LED_TICKS_MS            100
 #define WAIT_MS(msec_wait)      nrf_delay_ms(msec_wait)
 
 const nrf_drv_timer_t TIMER0 = NRF_DRV_TIMER_INSTANCE(0);
