@@ -6,10 +6,9 @@
  */
 #include <stdbool.h>
 #include <stdint.h>
-#include "app_uart.h"
-#include "app_error.h"
 #include "nrf.h"
 #include "nrf_gpio.h"
+#include "nrf_drv_uart.h"
 
 #define GPIO_CFG_OUTPUT(pin)    nrf_gpio_cfg_output(pin)
 #define LED_BLEND_V2            25
@@ -24,42 +23,67 @@
 #define UART_BLEND_V2_RX        11 //!< RedBear Blend V2 UART RX pin number
 #define UART_BLEND_V2_TX        12 //!< RedBear Blend V2 UART TX pin number
 
-/** <!-- uart_error_handler {{{1
- * @brief UART error handler
- * @param[in] p_event UART event
- * @return nothing
+/**
+ * @brief UART driver instance
  */
-void uart_error_handler(app_uart_evt_t* p_event) {
-    switch (p_event->evt_type) {
-        case APP_UART_COMMUNICATION_ERROR:
-            APP_ERROR_HANDLER(p_event->data.error_communication);
-            break;
-        case APP_UART_FIFO_ERROR:
-            APP_ERROR_HANDLER(p_event->data.error_code);
-            break;
-        default:
-            break;
-    }
-}
+const nrf_drv_uart_t m_uart = NRF_DRV_UART_INSTANCE(0);
 
 /** <!-- uart_init {{{1 -->
- * @brief initialize UART
+ * @brief initialize UART in blocking mode
  * @return nothing
  */
 void uart_init(void) {
-    const app_uart_comm_params_t cfg = {
-        .rx_pin_no = UART_BLEND_V2_RX,
-        .tx_pin_no = UART_BLEND_V2_TX,
-        .rts_pin_no = UART_PIN_DISCONNECTED,
-        .cts_pin_no = UART_PIN_DISCONNECTED,
-        .flow_control = APP_UART_FLOW_CONTROL_DISABLED,
-        .use_parity = false,
-        .baud_rate = UART_BAUDRATE_BAUDRATE_Baud115200,
+    const nrf_drv_uart_config_t cfg = {
+        .pselrxd = UART_BLEND_V2_RX,
+        .pseltxd = UART_BLEND_V2_TX,
+        .pselcts = NRF_UART_PSEL_DISCONNECTED,
+        .pselrts = NRF_UART_PSEL_DISCONNECTED,
+        .p_context = NULL,
+        .hwfc = (nrf_uart_hwfc_t)NRF_UART_HWFC_DISABLED,
+        .parity = (nrf_uart_parity_t)NRF_UART_PARITY_EXCLUDED,
+        .baudrate = (nrf_uart_baudrate_t)NRF_UART_BAUDRATE_115200,
+        .interrupt_priority = UART_DEFAULT_CONFIG_IRQ_PRIORITY,
+#ifdef UARTE_PRESENT
+        .use_easy_dma = DEFAULT_CONFIG_USE_EASY_DMA,
+#endif
     };
-
     ret_code_t err;
-    APP_UART_INIT(&cfg, uart_error_handler, APP_IRQ_PRIORITY_LOWEST, err);
-    APP_ERROR_CHECK(err);
+    err = nrf_drv_uart_init(&m_uart, &cfg, NULL);
+    if (err != NRF_SUCCESS) {
+        return;
+    }
+    
+#ifdef UARTE_PRESENT
+    if (!cfg.use_easy_dma)
+#endif
+    {
+        nrf_drv_uart_rx_enable(&m_uart);
+    }
+}
+
+/** <!-- uart_getc {{{1 -->
+ * @brief receive character via UART
+ * @param[in] buf pointer to received data container
+ * @return result of receive
+ */
+uint32_t uart_getc(uint8_t* buf) {
+    if (buf == NULL) {
+        return NRF_ERROR_NULL;
+    }
+    ret_code_t err;
+    err = nrf_drv_uart_rx(&m_uart, buf, 1);
+    return err;
+}
+
+/** <!-- uart_putc {{{1 -->
+ * @brief sending character via UART
+ * @param[in] buf character
+ * @return result of send
+ */
+uint32_t uart_putc(const uint8_t buf) {
+    ret_code_t err;
+    err = nrf_drv_uart_tx(&m_uart, &buf, 1);
+    return err;
 }
 
 /** <!-- gpio_init {{{1 -->
@@ -81,20 +105,17 @@ int main(void) {
 
     uint8_t c;
     while (1) {
-        while (app_uart_get(&c) != NRF_SUCCESS);
-        while (app_uart_put(c ) != NRF_SUCCESS);
+        while (uart_getc(&c) != NRF_SUCCESS);
+        while (uart_putc(c ) != NRF_SUCCESS);
 
         switch (c) {
             case '0':
-                printf("LED ON\r\n");
                 LED_OFF(LED_BLEND_V2);
                 break;
             case '1':
-                printf("LED OFF\r\n");
                 LED_ON_(LED_BLEND_V2);
                 break;
             case 't':
-                printf("LED TOGGLE\r\n");
                 LED_TGL(LED_BLEND_V2);
                 break;
             default:

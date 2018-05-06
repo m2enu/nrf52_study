@@ -2805,9 +2805,12 @@
 #if  UART0_ENABLED
 // <q> UART0_CONFIG_USE_EASY_DMA  - Default setting for using EasyDMA
 
+#ifndef UART0_USE_EASY_DMA
+#define UART0_USE_EASY_DMA 0
+#endif
 
 #ifndef UART0_CONFIG_USE_EASY_DMA
-#define UART0_CONFIG_USE_EASY_DMA 1
+#define UART0_CONFIG_USE_EASY_DMA 0
 #endif
 
 #endif //UART0_ENABLED
