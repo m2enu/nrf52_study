@@ -20,8 +20,8 @@
 #define LED_TICKS_MS            500
 #define WAIT_MS(msec_wait)      nrf_delay_ms(msec_wait)
 
-#define UART_BLEND_V2_RX        11 //!< RedBear Blend V2 UART RX pin number
-#define UART_BLEND_V2_TX        12 //!< RedBear Blend V2 UART TX pin number
+#define UART_BLEND_V2_RX        8 //!< RedBear Blend V2 UART RX pin number
+#define UART_BLEND_V2_TX        6 //!< RedBear Blend V2 UART TX pin number
 
 /**
  * @brief UART driver instance
